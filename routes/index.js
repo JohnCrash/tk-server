@@ -45,6 +45,8 @@ router.get('/book/', function (req, res) {
  * [{
  *  BookIndex: {Unit id}
  *  Unit: {Unit name}
+ *  Tatal: {单元下的总题数}
+ *  Processed: {处理过的}
  * }]
  */
 router.get('/module/', function (req, res) {
@@ -88,6 +90,8 @@ router.get('/module/', function (req, res) {
  * 返回节(BookIndex)下的所有题
  * 参数id
  * [{
+ *  state: {1选择题，2填空题，3解答题，4其他，－1忽略，0未处理}
+ *  type: {-1已删除，0未定义，1相同题，2相关题}
  *  BookIndexID: {章节信息}
  *  QuestionID: {题的id}
  *  TopicID: {题的id}
