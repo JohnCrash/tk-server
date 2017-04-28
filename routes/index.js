@@ -65,8 +65,8 @@ router.get('/module/', function (req, res) {
           for( let i=Number(m[1]);i<Number(m[2]);i+=10 ){
             ret.push({
               Unit:`UNIT ${i}-${i+10}`,
-              UnitBegin:m[1],
-              UnitEnd:m[2]
+              UnitBegin:i,
+              UnitEnd:i+10,
             });
           }
         }
@@ -147,6 +147,41 @@ router.get('/unit/', function (req, res) {
             QuestionID:result.recordset[i].QuestionID,
             TopicID:result.recordset[i].RawID,
             UserID:result.recordset[i].UserID});
+          }
+          res.json(ret);
+        }).catch(err=>{
+          res.send(err);
+        })    
+  }else{
+    res.send(`invalid argumnets,can not find 'BookIndex'`)
+  }
+});
+
+/**
+ * 根据开始索引和结束索引来返回一个几何
+ * 返回
+ *  [{
+ *  state: {1选择题，2填空题，3解答题，4其他，－1忽略，0未处理}
+ *  type: {-1已删除，0未定义，1相同题，2相关题}
+ *  BookIndexID: {章节信息}
+ *  QuestionID: {题的id}
+ *  TopicID: {题的id}
+ *  UserID: {录入者id}
+ * },...]
+ */
+router.get('/unitbyindex/', function (req, res) {
+  let begin = req.query['UnitBegin'];
+  let end = req.query['UnitEnd'];
+  if(begin && end){
+      new sql.ConnectionPool(config).connect().then(pool=>{
+          return pool.request().query(`select rowid,id,userid from raw_db where rowid>${begin} and rowid<=${end}`);
+        }).then(result=>{
+          let ret = [];
+          for( let i=0;i<result.recordset.length;i++){
+            ret.push({
+            QuestionID:result.recordset[i].rowid,
+            TopicID:result.recordset[i].id,
+            UserID:result.recordset[i].userid});
           }
           res.json(ret);
         }).catch(err=>{
