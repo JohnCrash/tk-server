@@ -206,6 +206,7 @@ router.get('/unitbyindex/', function (req, res) {
  *  css: {css}
  *  image: {拍照图}
  *  BookIndex: {分类}
+ *  source: {源地址}
  *  tid: {题目id}
  *  qid: {问题id}
  * }
@@ -215,11 +216,11 @@ router.get('/topic/', function (req, res) {
   let tid = req.query['tid'];
   var queryStr;
   if(QuestionID){
-    queryStr = `select state,type,bookindexid,tid,qid,
+    queryStr = `select state,type,bookindexid,source,tid,qid,
       topic_body,topic_tag,topic_answer,topic_analysis,topic_image,topic_css
         from raw_db where rowid='${QuestionID}'`;
   }else if(tid){
-    queryStr = `select state,type,bookindexid,tid,qid,
+    queryStr = `select state,type,bookindexid,source,tid,qid,
       topic_body,topic_tag,topic_answer,topic_analysis,topic_image,topic_css
         from raw_db where tid='${tid}'`;  
   }else{
