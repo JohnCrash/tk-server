@@ -74,7 +74,7 @@ router.get('/module/', function (req, res) {
       }else{
         //search units
         new sql.ConnectionPool(config).connect().then(pool=>{
-            return pool.request().query(`select id,BookLesson from BookIndex where BookName='${BookName}' and BookUnit='${Module}'`);
+            return pool.request().query(`select id,BookLesson from BookIndex where BookName='${BookName}' and BookUnit='${Module}' order by id`);
           }).then(result=>{
             let ret = [];
             for( let i=0;i<result.recordset.length;i++){
@@ -107,11 +107,15 @@ router.get('/module/', function (req, res) {
     }else{
       //search modules
       new sql.ConnectionPool(config).connect().then(pool=>{
-          return pool.request().query(`select distinct BookUnit from BookIndex where BookName='${BookName}'`);
+          return pool.request().query(`select id,BookUnit from BookIndex where BookName='${BookName}' order by id`);
         }).then(result=>{
           let ret = [];
+          let lastBookUnit;
           for( let i=0;i<result.recordset.length;i++){
-            ret.push({Module:result.recordset[i].BookUnit});
+            if(lastBookUnit!==result.recordset[i].BookUnit){
+              ret.push({Module:result.recordset[i].BookUnit});
+              lastBookUnit = result.recordset[i].BookUnit;
+            }
           }
           res.json(ret);
         }).catch(err=>{
