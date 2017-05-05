@@ -165,8 +165,6 @@ router.get('/unit/', function (req, res) {
  * 根据开始索引和结束索引来返回一个几何
  * 返回
  *  [{
- *  state: {1选择题，2填空题，3解答题，4其他，－1忽略，0未处理}
- *  type: {-1已删除，0未定义，1相同题，2相关题}
  *  BookIndexID: {章节信息}
  *  QuestionID: {题的id}
  *  TopicID: {题的id}
@@ -199,6 +197,8 @@ router.get('/unitbyindex/', function (req, res) {
 /*
  * 返回具体的题目
  * 参数QuestionID or tid
+ *  state: {1选择题，2填空题，3解答题，4其他，－1忽略，0未处理}
+ *  type: {-1已删除，0未定义，1相同题，2相关题}
  * 返回:
  * {
  *  type: {类型}
