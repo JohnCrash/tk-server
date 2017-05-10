@@ -221,11 +221,11 @@ router.get('/topic/', function (req, res) {
   var queryStr;
   if(QuestionID){
     queryStr = `select state,type,bookindexid,source,tid,qid,
-      topic_body,topic_tag,topic_answer,topic_analysis,topic_image,topic_css
+      topic_body,topic_tag,topic_answer,topic_analysis,topic_image,topic_css,body
         from raw_db where rowid='${QuestionID}'`;
   }else if(tid){
     queryStr = `select state,type,bookindexid,source,tid,qid,
-      topic_body,topic_tag,topic_answer,topic_analysis,topic_image,topic_css
+      topic_body,topic_tag,topic_answer,topic_analysis,topic_image,topic_css,body
         from raw_db where tid='${tid}'`;  
   }else{
     res.send(`invalid argumnets,can not find 'QuestionID' or 'TopicID' or 'tid'`);
@@ -237,7 +237,32 @@ router.get('/topic/', function (req, res) {
       res.json(result.recordset[0]);
     }).catch(err=>{
       res.send(err);
-    })      
+    });      
 });
 
+/**
+ * 上传交互式题干body
+ */
+router.post('/upload/',function(req,res){
+  let QuestionID = req.query['QuestionID'];
+  if(QuestionID){
+    if('body' in req.body && 'state' in req.body){
+      let queryStr = `update raw_db set body=N'${req.body.body}',state='${req.body.state}' where rowid=${QuestionID}`;
+      new sql.ConnectionPool(config).connect().then(pool=>{
+        return pool.request().query(queryStr);
+      }).then(result=>{
+        if(result.rowsAffected.length>0)
+          res.send('ok');
+        else
+          res.send(`can not find QuestionID : ${QuestionID}`);
+      }).catch(err=>{
+        res.send(err);
+      });   
+    }else{
+      res.send(`invalid post data,can not find 'body' or 'state'`);
+    }
+  }else{
+    res.send(`invalid argumnets,can not find 'QuestionID'`);
+  }
+});
 module.exports = router;
