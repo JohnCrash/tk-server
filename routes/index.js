@@ -247,7 +247,8 @@ router.post('/upload/',function(req,res){
   let QuestionID = req.query['QuestionID'];
   if(QuestionID){
     if('body' in req.body && 'state' in req.body){
-      let queryStr = `update raw_db set body=N'${req.body.body}',state='${req.body.state}' where rowid=${QuestionID}`;
+      let body = req.body.body.replace(/'/g,"''");
+      let queryStr = `update raw_db set body=N'${body}',state='${req.body.state}' where rowid=${QuestionID}`;
       new sql.ConnectionPool(config).connect().then(pool=>{
         return pool.request().query(queryStr);
       }).then(result=>{
