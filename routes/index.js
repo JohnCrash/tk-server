@@ -204,7 +204,7 @@ router.get('/unitbyindex/', function (req, res) {
  *  type: {类型}
  *  state: {状态}
  *  tag: {考点}
- *  body: {题目}
+ *  body: {题面}
  *  answer: {回答}
  *  analysis: {解析}
  *  css: {css}
@@ -213,6 +213,10 @@ router.get('/unitbyindex/', function (req, res) {
  *  source: {源地址}
  *  tid: {题目id}
  *  qid: {问题id}
+ *  markd_body {题面markdown}
+ *  markd_answer {答案markdown}
+ *  markd_analysis {解析markdown}
+ *  markd_tag {标签markdown}
  * }
  */
 router.get('/topic/', function (req, res) {
@@ -221,11 +225,13 @@ router.get('/topic/', function (req, res) {
   var queryStr;
   if(QuestionID){
     queryStr = `select state,type,bookindexid,source,tid,qid,
-      topic_body,topic_tag,topic_answer,topic_analysis,topic_image,topic_css,body
+      topic_body,topic_tag,topic_answer,topic_analysis,topic_image,topic_css,body,
+      markd_body,markd_answer,markd_analysis,markd_tag
         from raw_db where rowid='${QuestionID}'`;
   }else if(tid){
     queryStr = `select state,type,bookindexid,source,tid,qid,
-      topic_body,topic_tag,topic_answer,topic_analysis,topic_image,topic_css,body
+      topic_body,topic_tag,topic_answer,topic_analysis,topic_image,topic_css,body,
+       markd_body,markd_answer,markd_analysis,markd_tag
         from raw_db where tid='${tid}'`;  
   }else{
     res.send(`invalid argumnets,can not find 'QuestionID' or 'TopicID' or 'tid'`);
@@ -247,8 +253,25 @@ router.post('/upload/',function(req,res){
   let QuestionID = req.query['QuestionID'];
   if(QuestionID){
     if('body' in req.body && 'state' in req.body){
-      let body = req.body.body.replace(/'/g,"''");
-      let queryStr = `update raw_db set body=N'${body}',state='${req.body.state}' where rowid=${QuestionID}`;
+      let body = req.body.body.replace(/'/g,"''"); //转义'
+      let queryStr = `update raw_db set body=N'${body}',state='${req.body.state}'`;
+      if(req.body.markd_body){
+        let markd_body = req.body.markd_body.replace(/'/g,"''");
+        queryStr += `,markd_body=N'${markd_body}'`;
+      }
+      if(req.body.markd_answer){
+        let markd_answer = req.body.markd_answer.replace(/'/g,"''");
+        queryStr += `,markd_answer=N'${markd_answer}'`;
+      }
+      if(req.body.markd_analysis){
+        let markd_analysis = req.body.markd_analysis.replace(/'/g,"''");
+        queryStr += `,markd_analysis=N'${markd_analysis}'`;
+      }      
+      if(req.body.markd_tag){
+        let markd_tag = req.body.markd_tag.replace(/'/g,"''");
+        queryStr += `,markd_tag=N'${markd_tag}'`;
+      }      
+      queryStr += ` where rowid=${QuestionID}`;
       new sql.ConnectionPool(config).connect().then(pool=>{
         return pool.request().query(queryStr);
       }).then(result=>{
