@@ -207,7 +207,7 @@ router.get('/unitbyindex/', function (req, res) {
  *  body: {题面}
  *  answer: {回答}
  *  analysis: {解析}
- *  css: {css}
+ *  topic_css: {topic_css}
  *  image: {拍照图}
  *  BookIndex: {分类}
  *  source: {源地址}
@@ -252,39 +252,49 @@ router.get('/topic/', function (req, res) {
 router.post('/upload/',function(req,res){
   let QuestionID = req.query['QuestionID'];
   if(QuestionID){
-    if('body' in req.body && 'state' in req.body){
-      let body = req.body.body.replace(/'/g,"''"); //转义'
-      let queryStr = `update raw_db set body=N'${body}',state='${req.body.state}'`;
-      if(req.body.markd_body){
-        let markd_body = req.body.markd_body.replace(/'/g,"''");
-        queryStr += `,markd_body=N'${markd_body}'`;
-      }
-      if(req.body.markd_answer){
-        let markd_answer = req.body.markd_answer.replace(/'/g,"''");
-        queryStr += `,markd_answer=N'${markd_answer}'`;
-      }
-      if(req.body.markd_analysis){
-        let markd_analysis = req.body.markd_analysis.replace(/'/g,"''");
-        queryStr += `,markd_analysis=N'${markd_analysis}'`;
-      }      
-      if(req.body.markd_tag){
-        let markd_tag = req.body.markd_tag.replace(/'/g,"''");
-        queryStr += `,markd_tag=N'${markd_tag}'`;
-      }      
-      queryStr += ` where rowid=${QuestionID}`;
-      new sql.ConnectionPool(config).connect().then(pool=>{
-        return pool.request().query(queryStr);
-      }).then(result=>{
-        if(result.rowsAffected.length>0)
-          res.send('ok');
-        else
-          res.send(`can not find QuestionID : ${QuestionID}`);
-      }).catch(err=>{
-        res.send(err);
-      });   
-    }else{
-      res.send(`invalid post data,can not find 'body' or 'state'`);
+    let queryStr = `update raw_db set `;
+    let prefix = '';
+    if(req.body.state){
+      let state = req.body.state.replace(/'/g,"''"); //转义'
+      queryStr += `${prefix}state=N'${state}'`;  
+      prefix = ',';
     }
+    if(req.body.body){
+      let body = req.body.body.replace(/'/g,"''"); //转义'
+      queryStr += `${prefix}body=N'${body}'`;
+      prefix = ',';
+    }
+    if(req.body.markd_body){
+      let markd_body = req.body.markd_body.replace(/'/g,"''");
+      queryStr += `${prefix}markd_body=N'${markd_body}'`;
+      prefix = ',';
+    }
+    if(req.body.markd_answer){
+      let markd_answer = req.body.markd_answer.replace(/'/g,"''");
+      queryStr += `${prefix}markd_answer=N'${markd_answer}'`;
+      prefix = ',';
+    }
+    if(req.body.markd_analysis){
+      let markd_analysis = req.body.markd_analysis.replace(/'/g,"''");
+      queryStr += `${prefix}markd_analysis=N'${markd_analysis}'`;
+      prefix = ',';
+    }      
+    if(req.body.markd_tag){
+      let markd_tag = req.body.markd_tag.replace(/'/g,"''");
+      queryStr += `${prefix}markd_tag=N'${markd_tag}'`;
+      prefix = ',';
+    }      
+    queryStr += ` where rowid=${QuestionID}`;
+    new sql.ConnectionPool(config).connect().then(pool=>{
+      return pool.request().query(queryStr);
+    }).then(result=>{
+      if(result.rowsAffected.length>0)
+        res.send('ok');
+      else
+        res.send(`can not find QuestionID : ${QuestionID}`);
+    }).catch(err=>{
+      res.send(err);
+    });   
   }else{
     res.send(`invalid argumnets,can not find 'QuestionID'`);
   }
