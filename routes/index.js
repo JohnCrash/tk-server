@@ -223,16 +223,16 @@ router.get('/topic/', function (req, res) {
   let QuestionID = req.query['QuestionID'];
   let tid = req.query['tid'];
   var queryStr;
+  queryStr = `select state,type,bookindexid,source,tid,qid,topic_image,topic_css,
+      topic_body,topic_answer,topic_analysis,topic_tag,
+      body,answer,analysis,tag,
+      markd_body,markd_answer,markd_analysis,markd_tag,
+      seat_body,seat_answer,seat_analysis,seat_tag
+        from raw_db where `;
   if(QuestionID){
-    queryStr = `select state,type,bookindexid,source,tid,qid,
-      topic_body,topic_tag,topic_answer,topic_analysis,topic_image,topic_css,body,
-      markd_body,markd_answer,markd_analysis,markd_tag
-        from raw_db where rowid='${QuestionID}'`;
+    queryStr = queryStr + "rowid='" + QuestionID + "'";
   }else if(tid){
-    queryStr = `select state,type,bookindexid,source,tid,qid,
-      topic_body,topic_tag,topic_answer,topic_analysis,topic_image,topic_css,body,
-       markd_body,markd_answer,markd_analysis,markd_tag
-        from raw_db where tid='${tid}'`;  
+    queryStr = queryStr + "tid='" + tid + "'";
   }else{
     res.send(`invalid argumnets,can not find 'QuestionID' or 'TopicID' or 'tid'`);
     return;
@@ -255,15 +255,29 @@ router.post('/upload/',function(req,res){
     let queryStr = `update raw_db set `;
     let prefix = '';
     if(req.body.state){
-      let state = req.body.state.replace(/'/g,"''"); //转义'
-      queryStr += `${prefix}state=N'${state}'`;  
+      queryStr += `${prefix}state='${req.body.state}'`;  
       prefix = ',';
     }
     if(req.body.body){
-      let body = req.body.body.replace(/'/g,"''"); //转义'
+      let body = req.body.body.replace(/'/g,"''");
       queryStr += `${prefix}body=N'${body}'`;
       prefix = ',';
     }
+    if(req.body.answer){
+      let answer = req.body.answer.replace(/'/g,"''");
+      queryStr += `${prefix}answer=N'${answer}'`;
+      prefix = ',';
+    }
+    if(req.body.analysis){
+      let analysis = req.body.analysis.replace(/'/g,"''");
+      queryStr += `${prefix}analysis=N'${analysis}'`;
+      prefix = ',';
+    }    
+    if(req.body.tag){
+      let tag = req.body.tag.replace(/'/g,"''");
+      queryStr += `${prefix}tag=N'${tag}'`;
+      prefix = ',';
+    }        
     if(req.body.markd_body){
       let markd_body = req.body.markd_body.replace(/'/g,"''");
       queryStr += `${prefix}markd_body=N'${markd_body}'`;
@@ -283,7 +297,23 @@ router.post('/upload/',function(req,res){
       let markd_tag = req.body.markd_tag.replace(/'/g,"''");
       queryStr += `${prefix}markd_tag=N'${markd_tag}'`;
       prefix = ',';
+    }  
+    if('seat_body' in req.body){
+      queryStr += `${prefix}seat_body=${req.body.seat_body}`;
+      prefix = ',';
+    }
+    if("seat_answer" in req.body){
+      queryStr += `${prefix}seat_answer=${req.body.seat_answer}`;
+      prefix = ',';
+    }
+    if('seat_analysis' in req.body){
+      queryStr += `${prefix}seat_analysis=${req.body.seat_analysis}`;
+      prefix = ',';
     }      
+    if('seat_tag' in req.body){
+      queryStr += `${prefix}seat_tag=${req.body.seat_tag}`;
+      prefix = ',';
+    }          
     queryStr += ` where rowid=${QuestionID}`;
     new sql.ConnectionPool(config).connect().then(pool=>{
       return pool.request().query(queryStr);
