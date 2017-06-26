@@ -254,46 +254,46 @@ router.post('/upload/',function(req,res){
   if(QuestionID){
     let queryStr = `update raw_db set `;
     let prefix = '';
-    if(req.body.state){
+    if('state' in req.body){
       queryStr += `${prefix}state='${req.body.state}'`;  
       prefix = ',';
     }
-    if(req.body.body){
+    if('body' in req.body){
       let body = req.body.body.replace(/'/g,"''");
       queryStr += `${prefix}body=N'${body}'`;
       prefix = ',';
     }
-    if(req.body.answer){
+    if('answer' in req.body){
       let answer = req.body.answer.replace(/'/g,"''");
       queryStr += `${prefix}answer=N'${answer}'`;
       prefix = ',';
     }
-    if(req.body.analysis){
+    if('analysis' in req.body){
       let analysis = req.body.analysis.replace(/'/g,"''");
       queryStr += `${prefix}analysis=N'${analysis}'`;
       prefix = ',';
     }    
-    if(req.body.tag){
+    if('tag' in req.body){
       let tag = req.body.tag.replace(/'/g,"''");
       queryStr += `${prefix}tag=N'${tag}'`;
       prefix = ',';
     }        
-    if(req.body.markd_body){
+    if('markd_body' in req.body){
       let markd_body = req.body.markd_body.replace(/'/g,"''");
       queryStr += `${prefix}markd_body=N'${markd_body}'`;
       prefix = ',';
     }
-    if(req.body.markd_answer){
+    if('markd_answer' in req.body){
       let markd_answer = req.body.markd_answer.replace(/'/g,"''");
       queryStr += `${prefix}markd_answer=N'${markd_answer}'`;
       prefix = ',';
     }
-    if(req.body.markd_analysis){
+    if('markd_analysis' in req.body){
       let markd_analysis = req.body.markd_analysis.replace(/'/g,"''");
       queryStr += `${prefix}markd_analysis=N'${markd_analysis}'`;
       prefix = ',';
     }      
-    if(req.body.markd_tag){
+    if('markd_tag' in req.body){
       let markd_tag = req.body.markd_tag.replace(/'/g,"''");
       queryStr += `${prefix}markd_tag=N'${markd_tag}'`;
       prefix = ',';
