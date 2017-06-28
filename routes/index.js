@@ -1,6 +1,9 @@
-sql = require('mssql')
-
+sql = require('mssql');
+var fs = require('fs');
 var express = require('express');
+var multiparty = require('multiparty');
+var crypto = require('crypto');
+
 var router = express.Router();
 
 const config = {
@@ -9,6 +12,8 @@ const config = {
   server:'192.168.2.15',
   database:'ep_tiku',
 }
+const upload = 'G:/tk/react-tiku/public/images/';//上传路径
+const images_host = 'images/'; //外部访问路径相对或者绝对
 
 const alltopicBOOK = '全部题库';
 /*
@@ -328,5 +333,74 @@ router.post('/upload/',function(req,res){
   }else{
     res.send(`invalid argumnets,can not find 'QuestionID'`);
   }
+});
+
+/**
+ * 上传图片，并将图片名称命名为该图片的md5
+ * 使用multiparty库
+ */
+router.post('/upload_image/',function(req,res,next){
+  var form = new multiparty.Form();
+  var image;
+  var title = 'title';
+
+  form.on('error', next);
+  form.on('close', function(){
+    if(image){
+      let data = new Uint8Array(image.size);
+      let offset = 0;
+      for(let i=0;i<image.bufs.length;i++){
+        data.set(image.bufs[i],offset);
+        offset+=image.bufs[i].length;
+      }
+      let buf = Buffer.from(data.buffer);
+      var md5sum = crypto.createHash('md5');
+      md5sum.update(buf);
+      var md5name = md5sum.digest('hex');
+      var m = image.filename.match(/.*\.(.*)$/);
+      var ext = m?m[1]:'';
+      var filename = `${upload}${md5name}.${ext}`;
+      //如果文件已经存在，并且尺寸相同，不进行更新。
+      fs.stat(filename,(err,stat)=>{
+        if(!(stat&&stat.size==image.size)){
+          fs.writeFile(filename,buf);
+        }
+        res.json({
+          success:1,
+          url:`${images_host}${md5name}.${ext}`,
+          message:'ok'
+        });
+      });
+    }else{
+      res.json({
+         success:0,
+         message:'没有正常删除图片.',
+      });
+    }
+  });
+
+  // listen on field event for title
+  form.on('field', function(name, val){
+    if (name !== 'title') return;
+    title = val;
+  });
+
+  // listen on part event for image file
+  form.on('part', function(part){
+    if (!part.filename) return;
+    if (part.name !== 'editormd-image-file') return part.resume();
+    image = {
+      filename:part.filename,
+      size:0,
+      bufs:[],    
+    };
+    part.on('data', function(buf){
+      console.log(`buf : ${buf.length}`);
+      image.bufs.push(buf);
+      image.size += buf.length;
+    });
+  });
+  // parse the form
+  form.parse(req);  
 });
 module.exports = router;
