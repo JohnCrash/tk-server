@@ -11,7 +11,7 @@ const config = {
   password:'123456',
   server:'192.168.2.15',
   database:'ep_tiku',
-}
+};
 const upload = 'G:/tk/react-tiku/public/images/';//上传路径
 const images_host = 'images/'; //外部访问路径相对或者绝对
 
@@ -403,4 +403,69 @@ router.post('/upload_image/',function(req,res,next){
   // parse the form
   form.parse(req);  
 });
+
+/**
+ * 返回注册的设备信息
+ */
+router.post('/get_devices/',function(req,res,next){
+  let queryStr = `select id,device_name,device_mac from DeviceInfo`;
+  new sql.ConnectionPool(config).connect().then(pool=>{
+    return pool.request().query(queryStr);
+  }).then(result=>{
+    res.json(result.recordset);
+  }).catch(err=>{
+    res.send(err);
+  });
+});
+
+/**
+ * 删除一个设备
+ */
+router.post('/remove_devices/',function(req,res,next){
+  let id = req.query['id'];
+  let queryStr = `delete from DeviceInfo where id=${id}`;
+  new sql.ConnectionPool(config).connect().then(pool=>{
+    return pool.request().query(queryStr);
+  }).then(result=>{
+    res.send('ok');
+  }).catch(err=>{
+    res.send(err);
+  });
+});
+
+/**
+ * 添加一个设备
+ */
+router.post('/add_devices/',function(req,res,next){
+  let deviceName = req.query['name'];
+  let deviceMac = req.query['mac'];
+  
+  let queryStr = `insert into DeviceInfo (device_name,device_mac) values ('${deviceName}','${deviceMac}')`;
+  let queryStr2 = `select id from DeviceInfo where device_mac='${deviceMac}'`;
+
+  new sql.ConnectionPool(config).connect().then(pool=>{
+    return pool.request().query(queryStr2);
+  }).then(result=>{
+    if( result.recordset.length==0 ){
+      new sql.ConnectionPool(config).connect().then(pool=>{
+        return pool.request().query(queryStr);
+      }).then(result=>{
+        new sql.ConnectionPool(config).connect().then(pool=>{
+          return pool.request().query(queryStr2);
+        }).then(result=>{
+          res.send(result.recordsets[0].id);
+        }).catch(err=>{
+          res.send(err);
+        });  
+      }).catch(err=>{
+        res.send(err);
+      }); 
+    }else{
+      res.send('设备已经存在!');
+    }
+  }).catch(err=>{
+    res.send(err);
+  });
+});
+
 module.exports = router;
