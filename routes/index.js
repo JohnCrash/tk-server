@@ -468,4 +468,14 @@ router.post('/add_devices/',function(req,res,next){
   });
 });
 
+/**
+ * 输入作业帮的题目
+ */
+router.get('/import/',function(req,res,next){
+  res.set('Content-Type','text/event-stream');
+  res.set('Cache-Control','no-cache');
+  res.set('Connection','Keep-Alive');
+  res.send('ok\n');
+  res.end();
+});
 module.exports = router;
