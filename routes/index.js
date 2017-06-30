@@ -478,4 +478,105 @@ router.get('/import/',function(req,res,next){
   res.send('ok\n');
   res.end();
 });
+
+/**
+ * 获取科目
+ * select distinct BookSubject from BookIndex
+ */
+router.get('/BookSubject/',function(req,res,next){
+  new sql.ConnectionPool(config).connect().then(pool=>{
+    return pool.request().query('select BookSubject,max(id) as uid from BookIndex group by BookSubject order by uid');
+  }).then(result=>{
+    let ret = [];
+    for( let i=0;i<result.recordset.length;i++){
+      if(result.recordset[i].BookSubject)
+        ret.push({BookSubject:result.recordset[i].BookSubject});
+    }
+    res.json(ret);
+  }).catch(err=>{
+    res.send(err);
+  })
+});
+
+/**
+ * 获取版本
+ */
+router.get('/BookVersion/',function(req,res,next){
+  let BookSubject = req.query['BookSubject'];
+  let strQury = `select BookVersion,max(id) as uid from BookIndex where BookSubject=N'${BookSubject}' group by BookVersion order by uid`;
+  new sql.ConnectionPool(config).connect().then(pool=>{
+    return pool.request().query(strQury);
+  }).then(result=>{
+    let ret = [];
+    for( let i=0;i<result.recordset.length;i++){
+      ret.push({BookVersion:result.recordset[i].BookVersion});
+    }
+    res.json(ret);
+  }).catch(err=>{
+    res.send(err);
+  })
+});
+/**
+ * 获取册
+ */
+router.get('/BookPeriod/',function(req,res,next){
+  let BookSubject = req.query['BookSubject'];
+  let BookVersion = req.query['BookVersion'];
+  let strQury = `select BookPeriod,max(id) as uid from BookIndex where BookSubject=N'${BookSubject}' and BookVersion=N'${BookVersion}' group by BookPeriod order by uid`;
+  new sql.ConnectionPool(config).connect().then(pool=>{
+    return pool.request().query(strQury);
+  }).then(result=>{
+    let ret = [];
+    for( let i=0;i<result.recordset.length;i++){
+      ret.push({BookPeriod:result.recordset[i].BookPeriod});
+    }
+    res.json(ret);
+  }).catch(err=>{
+    res.send(err);
+  })
+});
+/**
+ * 获取章
+ */
+router.get('/Chapter/',function(req,res,next){
+  let BookSubject = req.query['BookSubject'];
+  let BookVersion = req.query['BookVersion'];
+  let BookPeriod = req.query['BookPeriod'];
+  let strQury = `select BookUnit,max(id) as uid from BookIndex where BookSubject=N'${BookSubject}' and BookVersion=N'${BookVersion}' and BookPeriod=N'${BookPeriod}' group by BookUnit order by uid`;
+  new sql.ConnectionPool(config).connect().then(pool=>{
+    return pool.request().query(strQury);
+  }).then(result=>{
+    res.json(result.recordset);
+  }).catch(err=>{
+    res.send(err);
+  })
+});
+/**
+ * 获取节
+ */
+router.get('/Section/',function(req,res,next){
+  let BookSubject = req.query['BookSubject'];
+  let BookVersion = req.query['BookVersion'];
+  let BookPeriod = req.query['BookPeriod'];
+  let BookChapter = req.query['BookChapter'];
+  let strQury = `select BookUnit,BookLesson,ChapterID,SectionID from BookIndex where BookSubject=N'${BookSubject}' and BookVersion=N'${BookVersion}' and BookPeriod=N'${BookPeriod}' and BookUnit=N'${BookChapter}'`;
+  new sql.ConnectionPool(config).connect().then(pool=>{
+    return pool.request().query(strQury);
+  }).then(result=>{
+    let ret = [];
+    for(let i=0;i<result.recordset.length;i++){
+      let t = result.recordset[i];
+      if(t.BookLesson && t.BookLesson != "NULL"){
+        ret.push({
+          BookLesson:t.BookLesson,
+          ChapterID:t.ChapterID,
+          SectionID:t.SectionID
+        });
+      }
+    }
+    res.json(ret);
+  }).catch(err=>{
+    res.send(err);
+  })
+});
 module.exports = router;
