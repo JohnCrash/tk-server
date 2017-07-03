@@ -167,7 +167,7 @@ router.get('/unit/', function (req, res) {
 });
 
 /**
- * 根据开始索引和结束索引来返回一个几何
+ * 根据开始索引和结束索引来返回一个集合
  * 返回
  *  [{
  *  BookIndexID: {章节信息}
@@ -579,4 +579,44 @@ router.get('/Section/',function(req,res,next){
     res.send(err);
   })
 });
+
+/**
+ * 获取节下的题，以10题为一个分页
+ * 分页查询语句
+ * select * from (select *,row_number() over(order by rowid) as 'RowNumber' from raw_db where bookindexid=25) a where a. RowNumber between 10 and 20
+ * 或者
+ * select top 10 rowid from (SELECT TOP 30 rowid FROM raw_db where bookindexid=25 order by rowid asc) a order by rowid desc
+ * 第二种方法返回的是反序的，并在页尾时要做特殊判断
+ */
+router.get('/SectionPage10/',function(req,res,next){
+  let SectionID = req.query['SectionID'];
+  let SectionPage = req.query['SectionPage'];
+  SectionID = 25;
+  let strQury = `select count(rowid) from raw_db where bookindexid=${SectionID}`;
+  new sql.ConnectionPool(config).connect().then(pool=>{
+    return pool.request().query(strQury);
+  }).then(result=>{
+    let strQury2;
+    let pageCount = Math.ceil(result.recordset[0][""]/10);
+    if(!SectionPage){
+      SectionPage = 1;
+    }
+    strQury2 = `select * from (select *,row_number() over(order by rowid) as 'RowNumber' from raw_db where bookindexid=${SectionID}) a where a. RowNumber between ${(SectionPage-1)*10+1} and ${SectionPage*10}`;
+    new sql.ConnectionPool(config).connect().then(pool=>{
+      return pool.request().query(strQury2);
+    }).then(result=>{
+      let r = {
+        sectionID:SectionID,
+        pageCount:pageCount,
+        currentPage:SectionPage,
+        items:result.recordset};
+      res.send(r);
+    }).catch(err=>{
+      res.send(err);
+    })
+  }).catch(err=>{
+    res.send(err);
+  })
+});
+
 module.exports = router;
