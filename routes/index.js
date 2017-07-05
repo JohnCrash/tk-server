@@ -591,13 +591,11 @@ router.get('/Section/',function(req,res,next){
 router.get('/SectionPage10/',function(req,res,next){
   let SectionID = req.query['SectionID'];
   let SectionPage = req.query['SectionPage'];
-  SectionID = 25;
-  let strQury = `select count(rowid) from raw_db where bookindexid=${SectionID}`;
-  new sql.ConnectionPool(config).connect().then(pool=>{
-    return pool.request().query(strQury);
-  }).then(result=>{
+  let PageCount = req.query['PageCount'];
+
+  function getpage(){
     let strQury2;
-    let pageCount = Math.ceil(result.recordset[0][""]/10);
+    
     if(!SectionPage){
       SectionPage = 1;
     }
@@ -607,16 +605,27 @@ router.get('/SectionPage10/',function(req,res,next){
     }).then(result=>{
       let r = {
         sectionID:SectionID,
-        pageCount:pageCount,
+        pageCount:Number(PageCount),
         currentPage:SectionPage,
         items:result.recordset};
       res.send(r);
     }).catch(err=>{
       res.send(err);
     })
-  }).catch(err=>{
-    res.send(err);
-  })
+  }
+  if(PageCount){ //如果已经给出了页数就不进行查找了
+    getpage();
+  }else{
+    let strQury = `select count(rowid) from raw_db where bookindexid=${SectionID}`;
+    new sql.ConnectionPool(config).connect().then(pool=>{
+      return pool.request().query(strQury);
+    }).then(result=>{
+      PageCount = Math.ceil(result.recordset[0][""]/10);
+      getpage();
+    }).catch(err=>{
+      res.send(err);
+    })
+  }
 });
 
 module.exports = router;
