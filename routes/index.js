@@ -16,6 +16,16 @@ const upload = 'G:/tk/react-tiku/public/images/';//上传路径
 const images_host = 'images/'; //外部访问路径相对或者绝对
 
 const alltopicBOOK = '全部题库';
+
+function sqlQuery(query,cb,ep){
+  new sql.ConnectionPool(config).connect().then(pool=>{
+    return pool.request().query(query);
+  }).then(result=>{
+    cb(result);
+  }).catch(err=>{
+    ep(err);
+  });
+}
 /*
  * 返回书面列表
  * 无参数
@@ -25,18 +35,17 @@ const alltopicBOOK = '全部题库';
  * },...]
  */
 router.get('/book/', function (req, res) {
-  new sql.ConnectionPool(config).connect().then(pool=>{
-    return pool.request().query('select distinct BookName from BookIndex');
-  }).then(result=>{
+  sqlQuery('select distinct BookName from BookIndex',(result)=>{
     let ret = [];
     ret.push({BookName:alltopicBOOK});
     for( let i=0;i<result.recordset.length;i++){
       ret.push(result.recordset[i]);
     }
     res.json(ret);
-  }).catch(err=>{
+  },
+  (err)=>{
     res.send(err);
-  })
+  });
 });
 
 /*
@@ -599,7 +608,7 @@ router.get('/SectionPage10/',function(req,res,next){
     if(!SectionPage){
       SectionPage = 1;
     }
-    strQury2 = `select * from (select *,row_number() over(order by rowid) as 'RowNumber' from raw_db where bookindexid=${SectionID}) a where a. RowNumber between ${(SectionPage-1)*10+1} and ${SectionPage*10}`;
+    strQury2 = `select * from (select *,row_number() over(order by rowid desc) as 'RowNumber' from raw_db where bookindexid=${SectionID}) a where a. RowNumber between ${(SectionPage-1)*10+1} and ${SectionPage*10} order by rowid desc`;
     new sql.ConnectionPool(config).connect().then(pool=>{
       return pool.request().query(strQury2);
     }).then(result=>{
@@ -626,6 +635,21 @@ router.get('/SectionPage10/',function(req,res,next){
       res.send(err);
     })
   }
+});
+
+/**
+ * 加入一个新markd题
+ */
+router.get('/add/',function(req,res){
+  let SectionID = req.query['SectionID'];
+  //初始化加入time(重建时间)，processdate(处理时间)，bookindexid，userid，state，seat
+  let queryStr = `insert into raw_db (time,processdate,bookindexid,userid,state,seat_body,markd_body,seat_answer,markd_answer,seat_analysis,markd_analysis,seat_tag,markd_tag) values 
+  (getdate(),getdate(),${SectionID},0,-1,2,'',2,'',2,'',2,'') select @@identity`;
+  sqlQuery(queryStr,(result)=>{
+    res.json({rowid:result.recordset[0][""]});
+  },(err)=>{
+    res.send(err);
+  });
 });
 
 module.exports = router;
