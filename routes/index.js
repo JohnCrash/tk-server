@@ -652,4 +652,20 @@ router.get('/add/',function(req,res){
   });
 });
 
+/**
+ * 清理章节下全部
+ */
+router.get('/clear/',function(req,res){
+  let SectionID = req.query['SectionID'];
+  if(SectionID){
+    let queryStr = `delete from raw_db where bookindexid=${SectionID} and state=-1`;
+    sqlQuery(queryStr,(result)=>{
+      res.send('ok');
+    },(err)=>{
+      res.send(err);
+    });
+  }else{
+    res.send('can not found argument SectionID');
+  }
+});
 module.exports = router;
