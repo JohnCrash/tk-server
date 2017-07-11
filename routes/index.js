@@ -1,4 +1,4 @@
-sql = require('mssql');
+var sql = require('mssql');
 var fs = require('fs');
 var express = require('express');
 var multiparty = require('multiparty');

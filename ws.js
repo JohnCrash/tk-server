@@ -3,60 +3,112 @@ const child_process = require('child_process');
 var WebSocket = require('faye-websocket');
 var http      = require('http');
  
+var sql = require('mssql');
+
+const config = {
+  user:'sa',
+  password:'123456',
+  server:'192.168.2.15',
+  database:'ep_tiku',
+};
+function sqlQuery(query,cb,ep){
+  new sql.ConnectionPool(config).connect().then(pool=>{
+    return pool.request().query(query);
+  }).then(result=>{
+    cb(result);
+  }).catch(err=>{
+    ep(err);
+  });
+}
+
 var server = http.createServer();
 var devices = {};
 
 server.on('upgrade', function(request, socket, body) {
   if (WebSocket.isWebSocket(request) && request.url) {
-    var mac = request.url.replace(/\//g,'');
-    var current = devices[mac];
-    var ws = new WebSocket(request, socket, body);
-
-    ws.on('message', function(event) {
-      console.log('message:'+event.data);
-      switch(event.data){
-        case 'accept':
-          if(devices[mac].reqws){
-            ws.send('refuse');
-            ws.close();
-            devices[mac].ws = devices[mac].reqws;
-            devices[mac].reqws = null;
-            devices[mac].ws.send('accept');
-          }
-        break;
-        case 'refuse':
-          if(devices[mac].reqws){
-            devices[mac].reqws.send('refuse');
-            devices[mac].reqws.close();
-            devices[mac].reqws = null;
-          }
-        break;
-      }
-    });
-    
-    ws.on('close', function(event) {
-      console.log('close', event.code, event.reason);
-      if(current &&current.reqws === ws){
-        current.reqws = null;
-      }
-      if(devices[mac] && devices[mac].ws===ws){
-        devices[mac].ws = null;
-      }
-      ws = null;
-    });
-
-    if(current && current.ws){//存在
-      if(current.reqws){
-        ws.send('refuse');
-        ws.close();
-      }else{
-        current.reqws = ws;
-        current.ws.send('req');
-      }
-    }else{//不存在
-      devices[mac] = {mac,ws};
-      ws.send('accept');
+    var cookies = request.headers.cookie;
+    if(!cookies){
+      seocket.write('no cookie');
+      socket.end();
+      return;
     }
+    cookies = cookies.split('; ');
+    var cookie = cookies.filter((t)=>{
+      return t.match(/cc=(.*)/);
+    });
+    if(cookie.length!=1){
+      seocket.write('no cookie cc');
+      socket.end();
+      return;
+    }
+    cookie = cookie[0].replace(/^cc=(.*)/,($1,$2)=>{
+      return $2;
+    });
+    sqlQuery(`select * from UserInfo where cookie='${cookie}'`,(result)=>{
+      if(!(result && result.recordsets && result.recordsets[0])){
+        seocket.write('invalid cookie cc='+cookie);
+        socket.end();
+        return;
+      }
+      var userinfo = result.recordsets[0][0];
+      var mac = request.url.replace(/\//g,'');
+      var current = devices[mac];
+      var ws = new WebSocket(request, socket, body);
+
+      ws.on('message', function(event) {
+        switch(event.data){
+          case 'accept':
+            if(devices[mac].reqws){
+              ws.send('refuse');
+              ws.close();
+              devices[mac].ws = devices[mac].reqws;
+              devices[mac].reqws = null;
+              devices[mac].ws.send('accept');
+            }
+          break;
+          case 'refuse':
+            if(devices[mac].reqws){
+              devices[mac].reqws.send('refuse');
+              devices[mac].reqws.close();
+              devices[mac].reqws = null;
+            }
+          break;
+        }
+        var m = event.data.match(/sectionid=(\d*)/);
+        if(m){
+          var sectionid = m[1];
+          sqlQuery(`update DeviceInfo set SectionID='${sectionid}',UseAccount='${userinfo.UserAcount}' where device_mac='${mac}'`,(result)=>{
+          },(err)=>{});
+        }
+      });
+      
+      ws.on('close', function(event) {
+        console.log('close', event.code, event.reason);
+        if(current &&current.reqws === ws){
+          current.reqws = null;
+        }
+        if(devices[mac] && devices[mac].ws===ws){
+          devices[mac].ws = null;
+        }
+        sqlQuery(`update DeviceInfo set SectionID=-1 where device_mac='${mac}'`,(result)=>{
+        },(err)=>{});        
+        ws = null;
+      });
+
+      if(current && current.ws){//存在
+        if(current.reqws){
+          ws.send('refuse');
+          ws.close();
+        }else{
+          current.reqws = ws;
+          current.ws.send('req');
+        }
+      }else{//不存在
+        devices[mac] = {mac,ws};
+        ws.send('accept');
+      }},(err)=>{
+        socket.send(err);
+        socket.close();});
   }
 });
 
