@@ -668,4 +668,68 @@ router.get('/clear/',function(req,res){
     res.send('can not found argument SectionID');
   }
 });
+
+/**
+ * 登录
+ */
+router.post('/login/',function(req,res){
+  let cc = req.cookies.cc;
+  if(cc){ //通过cookie登录
+    sqlQuery(`select * from UserInfo where cookie='${cc}'`,(result)=>{
+      if(result.recordset[0] && result.recordset[0].UserName && result.recordset[0].UserAcount){
+        sqlQuery(`update UserInfo set lastlogin=getdate() where UserAcount='${result.recordset[0].UserAcount}'`,()=>{},()=>{});
+          res.json({
+            result:'ok',
+            user:result.recordset[0].UserName
+          });
+      }else{
+        res.json({result:'请重新输入密码'});
+      }
+    },(err)=>{
+      res.send(err);
+    });
+    return;
+  }
+  let user = req.body.user;
+  let passwd = req.body.passwd;
+  if(!(user && passwd)){
+    res.json({result:'请输入用户名密码'});
+    return;
+  } 
+  sqlQuery(`select * from UserInfo where UserAcount='${user}'`,(result)=>{
+    if( result.recordset[0] && 'UserPwd' in result.recordset[0]){
+      if(result.recordset[0].UserPwd===passwd){
+        let cookie = result.recordset[0].cookie;
+        let userName = result.recordset[0].UserName;
+        if(!cookie){//产生一个新的cookie
+          var md5sum = crypto.createHash('md5');
+          md5sum.update(user+passwd);
+          cookie = md5sum.digest('hex');
+          sqlQuery(`update UserInfo set cookie='${cookie}' where UserAcount='${user}'`,(result)=>{},(err)=>{});
+        }
+        sqlQuery(`update UserInfo set lastlogin=getdate() where UserAcount='${result.recordset[0].UserAcount}'`,()=>{},()=>{});
+        res.cookie('cc',cookie);
+        res.json({
+          result:'ok',
+          user:userName
+        });
+      }else{
+        res.json({result:'密码不正确'});
+      }
+    }else{
+      res.json({result:'用户名不存在'});
+    }
+  },(err)=>{
+    res.send(err);
+  });
+});
+
+/**
+ * 登出
+ */
+router.post('/logout/',function(req,res){
+  res.clearCookie('cc');
+  res.json('ok');  
+});
+
 module.exports = router;

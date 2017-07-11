@@ -12,6 +12,13 @@
         },
         {
             "type": "node",
+            "request": "launch",
+            "name": "调试ws.js",
+            "program": "${workspaceRoot}\\ws",
+            "args":["3002","g:/tk"]
+        },        
+        {
+            "type": "node",
             "request": "attach",
             "name": "附加到端口",
             "address": "localhost",
