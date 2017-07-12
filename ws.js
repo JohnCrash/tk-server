@@ -2,7 +2,7 @@ var fs = require('fs');
 const child_process = require('child_process');
 var WebSocket = require('faye-websocket');
 var http      = require('http');
- 
+const { StringDecoder } = require('string_decoder');
 var sql = require('mssql');
 
 const config = {
@@ -123,7 +123,7 @@ function launchTshark(){
   if(!tshark){
     console.log('tshark server...'); 
     tshark = child_process.spawn('tshark',['-X',`lua_script:${process.argv[3]}/tools/trap.lua`,
-    '-i','1','-Q']);
+    '-i','4','-Q']);
     tshark.stdout.on('data', (data) => {
       console.log(`tshark: ${data}`);
     });
@@ -134,6 +134,7 @@ function launchTshark(){
 
     tshark.on('close', (code) => {
       console.log(`tshark exited with code ${code}`);
+      launchTshark();
     });  
   }
 }
@@ -143,17 +144,26 @@ launchTshark();
  * 调用python脚本处理url
  */
 function processShareUrl(){
-  let cp = child_process.spawn('python',[`${process.argv[3]}/tools/curlcapturebyjs.py`,process.argv[3]]);
+  let cp = child_process.spawn('python',[`${process.argv[3]}/tools/curlcapturebyjs.py`,process.argv[3]],{cwd:process.argv[3]});
   cp.stdout.on('data', (data) => {
-    console.log(`csu: ${data}`);
+    var de = new StringDecoder('utf8');
+    var s = de.write(data);
+    var m = s.match(/newzyb:(.*)/);
+    if(m&&m[1]){
+      let mac = m[1];
+      if(devices[mac] && devices[mac].ws){
+        console.log('send news.');
+        devices[mac].ws.send('news');
+      }
+    }
+    console.log(`python: ${data}`);
   });
 
   cp.stderr.on('data', (data) => {
-    console.log(`csu err: ${data}`);
+    console.log(`python err: ${data}`);
   });
 
   cp.on('close', (code) => {
-    console.log(`curlcapture.py exited with code ${code}`);
   }); 
 }
 var delay;
